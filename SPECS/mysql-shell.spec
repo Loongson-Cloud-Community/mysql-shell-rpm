@@ -44,6 +44,9 @@ Release:        1%{?dist}
 License:        GPLv2
 URL:            http://dev.mysql.com/
 Source0:        https://cdn.mysql.com/Downloads/%{name}-8.0.30-src.tar.gz
+Source1:        https://github.com/Loongson-Cloud-Community/protobuf/releases/download/3.9.14/protobuf-3.19.4-static.tar.gz
+Source2:        https://github.com/Loongson-Cloud-Community/mysql-server/archive/refs/tags/v8.0.30.tar.gz
+Source3:        http://cloud.loongnix.cn/releases/loongarch64abi1/mysql/8.0.30/mysql-8.0.30-build-release.tar.gz
 
 # Dependencies for the cloud version
 %if 0%{?cloud}
@@ -141,6 +144,12 @@ a query and administration shell client and framework.
 %endif
 
 %prep
+mkdir -p protobuf-release
+tar -xf %{SOURCE1} -C protobuf-release
+mkdir -p mysql-source
+tar -xf %{SOURCE2} -C mysql-source
+mkdir -p mysql-build
+tar -xf %{SOURCE3} -C mysql-build
 %setup -q -n %{name}-8.0.30-src
 
 %build
@@ -150,6 +159,9 @@ cmake3 .. \
 %else
 cmake .. \
 %endif
+    -DMYSQL_BUILD_DIR="/root/rpmbuild/BUILD/mysql-build/mysql-8.0.30-build-release" \
+    -DMYSQL_SOURCE_DIR="/root/rpmbuild/BUILD/mysql-source/mysql-server-8.0.30" \
+    -DProtobuf_INCLUDE_DIR="/root/rpmbuild/BUILD/protobuf-release/protobuf-3.19.4-static" \
     -DCMAKE_INSTALL_PREFIX=%{_prefix} -DPython_ADDITIONAL_VERSIONS=3.9 \
     -DCMAKE_BUILD_TYPE=RelWithDebInfo \
     -DUSE_LD_LLD=0 \
@@ -171,7 +183,7 @@ cmake .. \
     -DV8_LIB_DIR=%{v8_libdir} \
 %else
     -DMYSQLCLIENT_STATIC_LINKING=ON \
-    -DHAVE_V8=OFF
+    -DHAVE_V8=OFF \
 %endif
 %if 0%{?with_protobuf:1}
     -DWITH_PROTOBUF=%{with_protobuf} \
@@ -207,6 +219,7 @@ cmake .. \
 %endif
     -DHAVE_PYTHON=1 \
     -DLIBEXECDIR=`basename %{_libexecdir}`
+
 
 # Supported V8 versions are limited, disable
 # V8 in non static for now.
